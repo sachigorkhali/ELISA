@@ -1,0 +1,73 @@
+import json
+from autoprotocol import Protocol
+
+
+
+p = Protocol()
+
+elisa_plate = p.ref("elisa_plate",None,"96-flat", storage="cold_4")
+antigen_mm = p.ref("antigen_mm", None, "micro-2.0", discard=True)
+antibody_mm = p.ref("antibody_mm", None, "micro-2.0", discard=True)
+secondary_antibody_mm = p.ref("secondary_antibody_mm", None, "micro-2.0", discard=True)
+first_wash_plate = p.ref("first_wash_plate", None,"96-deep", storage="cold_4")
+second_wash_plate = p.ref("second_wash_plate", None,"96-deep", storage="cold_4")
+waste_plate = p.ref("waste_plate", None,"96-deep", discard=True)
+
+
+
+
+#Distribute solution containing antigen to each well
+	#Antigen will stick to the plate
+p.distribute(antigen_mm.well(0).set_volume("1600:microliter"), elisa_plate.all_wells(), "15:microliter", allow_carryover=True)
+
+
+
+#Incubate for an hour 
+p.incubate(elisa_plate, "warm_37", "1:hour", shaking=False)
+
+
+
+#Take out antigen solution from each well (stamp) and discard 
+
+
+#Wash by stamping *3
+
+for i in range (0,3):
+	p.stamp(first_wash_plate, elisa_plate, "100:microliter")
+	p.stamp(elisa_plate, waste_plate, "100:microliter")
+
+
+
+#Add antibody solution to each well 
+
+p.distribute(antibody_mm.well(0).set_volume("1600:microliter"), elisa_plate.all_wells(), "10:microliter", allow_carryover=True)
+
+
+#Incubate 
+
+p.incubate(elisa_plate, "warm_37", "1:hour", shaking=False)
+
+
+#Wash by stamping *3
+
+for i in range (0,3):
+	p.stamp(second_wash_plate, elisa_plate, "100:microliter")
+	p.stamp(elisa_plate, waste_plate, "100:microliter")
+
+
+
+p.distribute(secondary_antibody_mm.well(0).set_volume("1600:microliter"), elisa_plate.all_wells(), "10:microliter", allow_carryover=True)
+
+
+for i in range (0,3):
+	p.stamp(second_wash_plate, elisa_plate, "100:microliter")
+	p.stamp(elisa_plate, waste_plate, "100:microliter")
+
+
+p.absorbance(elisa_plate, elisa_plate.all_wells(),
+             "600:nanometer", "test_reading", flashes=10)
+
+
+print json.dumps(p.as_dict(), indent=3)
+#print json, print out to command line this... p.as dict is a function we wrote.. will print as value, indent to is just the indentation for ease to read) 
+
